@@ -12,7 +12,8 @@
 defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.plugin.plugin' );
 define('PF_REGEX_MEDIAWIKI_PATTERN', "#{mediawiki (.*?)}#s");
-include('simple_html_dom.php');
+require_once(dirname(__FILE__) . '/../wikipedia/simple_html_dom.php');
+
 
 /**
 * WikipediaArticle Content Plugin
@@ -85,7 +86,7 @@ class plgContentMediaWiki extends JPlugin
 						$value = substr($pair, $pos + 1);
 						$_result[$key] = $value;
 					}
-					$p_content = $this->mediawikiarticle($_result);
+					$p_content = $this->mediawikiarticle($_result);								
 					$row->text = str_replace("{mediawiki " . $matches[1][$i] . "}", $p_content, $row->text);
 				}
 			}
@@ -135,19 +136,32 @@ class plgContentMediaWiki extends JPlugin
 		$url = $_params['url'];
 		//$url = 'https://fr.wikipedia.org/wiki/Seconds_Out'; 
 		$subject = $_params['subject'];//'http://www.jltryoen.fr/wiki/Half_ChtriMan_2010';
-		$content = $url . '/' . $subject;
-		return $content;
 		$html = $this->get_file_contents($url . '/' . $subject); //file_get_html($url); //
 		if (array_key_exists('tag', $_params)) {
 			$tag = $_params['tag'];
 		} else {
 			$tag = '#mw-content-text';
 		}
+		if (array_key_exists('no', $_params)) {
+			$no = (int)$_params['no'];
+		} else {
+			$no = 0;
+		}
+		if (array_key_exists('img', $_params)) {
+			$img = (bool)$_params['img'];
+		} else {
+			$img = true;
+		}
 		
 		// Get the first paragraph
 		$dom = str_get_html($html);//
-		$content = str_replace("src=\"/","src=\"". $url, $dom->find($tag, 0));
-		
+		$content = str_replace("src=\"/","src=\"". $url, $dom->find($tag, $no));
+		if ($img) {
+			$content .= sprintf('<a class="readmore-link" href="%s/%s"><img src="%s/favicon.ico"></img>', $url, $subject, $url )  .
+					" " . JText::_('COM_CONTENT_READ_MORE') . '</a>';
+		} else {
+			$content .= sprintf('<a href="%s/%s"></a>',$url, $subject) ;
+		}
 		return $content;
 	}
 }
