@@ -11,15 +11,15 @@
 // Check to ensure this file is included in Joomla!
 defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.plugin.plugin' );
-define('PF_REGEX_MEDIAWIKI_PATTERN', "#{mediawiki (.*?)}#s");
-require_once(dirname(__FILE__) . '/../wikipedia/simple_html_dom.php');
-
+define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s (.*?)}#s");
+require_once(dirname(__FILE__) . '/simple_html_dom.php');
+use Joomla\CMS\Uri\Uri;
 
 /**
 * WikipediaArticle Content Plugin
 *
 */
-class plgContentMediaWiki extends JPlugin
+class PlgSystemMediaWiki extends JPlugin
 {
 
 	/**
@@ -67,27 +67,38 @@ class plgContentMediaWiki extends JPlugin
             return true;
         }
 
- 		if ( strpos( $row->text, '{mediawiki' ) === false ) {
+ 		if ( (strpos( $row->text, '{wikipedia' ) === false ) && 
+             (strpos( $row->text, '{mediawiki' ) === false ) && 
+             (strpos( $row->text, '{joomla' ) === false )){
             return true;
 		}
-		preg_match_all(PF_REGEX_MEDIAWIKI_PATTERN, $row->text, $matches);
-		// Number of plugins
-		$count = count($matches[0]);
-		 // plugin only processes if there are any instances of the plugin in the text
-		if ($count) {
-			for ($i = 0; $i < $count; $i++)
-			{
-				if (@$matches[1][$i]) {
-					$inline_params = $matches[1][$i];
-					$pairs = explode(';', trim($inline_params));
-					foreach ($pairs as $pair) {
-						$pos = strpos($pair, "=");
-						$key = substr($pair, 0, $pos);
-						$value = substr($pair, $pos + 1);
-						$_result[$key] = $value;
+		$patterns = array("mediawiki", "wikipedia", "joomla");
+		foreach ($patterns as $pattern) {
+			preg_match_all(sprintf(PF_REGEX_MEDIAWIKI_PATTERN, $pattern), $row->text, $matches);
+			// Number of plugins
+			$count = count($matches[0]);
+			 // plugin only processes if there are any instances of the plugin in the text
+			if ($count) {
+				$_result = array();
+				for ($i = 0; $i < $count; $i++)
+				{
+					if (@$matches[1][$i]) {
+						$inline_params = $matches[1][$i];
+						$pairs = explode(';', trim($inline_params));
+						foreach ($pairs as $pair) {
+							$pos = strpos($pair, "=");
+							$key = substr($pair, 0, $pos);
+							$value = substr($pair, $pos + 1);
+							$_result[$key] = $value;
+						}
+                        if (!strcmp($pattern, "joomla")) {
+                            $uri = Uri::getInstance();                            
+                            $_result['url'] = $uri->toString();
+                            $_result['tag'] = "div.item-page";
+                        }
+						$p_content = $this->mediawikiarticle($pattern, $_result);								
+						$row->text = str_replace(sprintf("{%s " . $matches[1][$i] . "}", $pattern), $p_content, $row->text);
 					}
-					$p_content = $this->mediawikiarticle($_result);								
-					$row->text = str_replace("{mediawiki " . $matches[1][$i] . "}", $p_content, $row->text);
 				}
 			}
 		}
@@ -118,49 +129,107 @@ class plgContentMediaWiki extends JPlugin
 	*
 	* @param string The text string to find and replace
 	*/       
-	function mediawikiarticle( $_params )
+	function mediawikiarticle($type, $_params )
 	{
 		$content = "";
 		if (is_array( $_params )== false)
 		{
 			return  "errorf:" . print_r($_params, true);
 		}
-		if (! array_key_exists('url', $_params))
+		if (array_key_exists('name', $_params))
 		{
-			return  "errorf: url unknown" . print_r($_params, true);
+            $subject = $_params['name'];
 		}
-		if (! array_key_exists('subject', $_params))
+		elseif (array_key_exists('subject', $_params))
 		{
-			return  "errorf: subject unknown" . print_r($_params, true);
+			$subject = $_params['subject'];
 		}
-		$url = $_params['url'];
-		//$url = 'https://fr.wikipedia.org/wiki/Seconds_Out'; 
-		$subject = $_params['subject'];//'http://www.jltryoen.fr/wiki/Half_ChtriMan_2010';
-		$html = $this->get_file_contents($url . '/' . $subject); //file_get_html($url); //
-		if (array_key_exists('tag', $_params)) {
-			$tag = $_params['tag'];
+		else {
+			$subject = '';
+		}
+		if (!array_key_exists('url', $_params))
+		{
+		    $url = 'http://fr.wikipedia.org/wiki';
 		} else {
-			$tag = '#mw-content-text';
+			$url = rtrim($_params['url']);
+		}
+		if (array_key_exists('class', $_params)) {
+			$class  =  $_params['class'];
+		}
+		else {
+			$class  = "col-md-4 well border border-primary";
+		}
+        if(!strcmp($type, "joomla")) {
+            $html = $this->get_file_contents($url ."/index.php?option=com_content&view=article&tmpl=component&id=" . $subject);
+        } else {
+            $html = $this->get_file_contents($url . '/' . $subject);
+        }
+		if (array_key_exists('tag', $_params)) {
+			$tag = trim($_params['tag']);
+		} else {
+			$tag = 'p';
 		}
 		if (array_key_exists('no', $_params)) {
 			$no = (int)$_params['no'];
 		} else {
 			$no = 0;
 		}
+		if (array_key_exists('search', $_params)) {
+			$search = $_params['search'];
+		} else {
+			$search = NULL;
+		}
 		if (array_key_exists('img', $_params)) {
 			$img = (bool)$_params['img'];
 		} else {
-			$img = true;
+			$img = false;
 		}
+		if (array_key_exists('full', $_params)) {
+			$full = (bool)$_params['full'];
+		} else {
+			$full = true;
+		}	
+		
 		
 		// Get the first paragraph
 		$dom = str_get_html($html);//
-		$content = str_replace("src=\"/","src=\"". $url, $dom->find($tag, $no));
-		if ($img) {
-			$content .= sprintf('<a class="readmore-link" href="%s/%s"><img src="%s/favicon.ico"></img>', $url, $subject, $url )  .
-					" " . JText::_('COM_CONTENT_READ_MORE') . '</a>';
-		} else {
-			$content .= sprintf('<a href="%s/%s"></a>',$url, $subject) ;
+		$artcontent = $dom->find($tag, $no);
+		if ($search != NULL) {                
+			while ((strpos($artcontent, $search) == false )&&($no != 100)) {
+				$artcontent = $dom->find($tag, $no++);
+			}
+		}
+		$artcontent = str_replace("src=\"/","src=\"". $url, $artcontent);
+		
+		switch ($type) {
+			case 'mediawiki':			
+				if ($full == false) {
+					if ($img) {
+						$simage = sprintf("%s/favicon.ico", $url);
+					}
+					else {
+						$simage = "/images/wikipedia.png";
+					}
+					$content = sprintf('<div class="%s">%s<p><a href="%s/%s"><img src="%s" ></img>', 
+											$class, $artcontent, $url, $subject, $simage)  .
+											" " . 
+											JText::_('COM_CONTENT_READ_MORE') .
+											'</p></a></div>';
+				} else {
+					$content = $artcontent ;
+				}
+				break;
+            case 'joomla':	            
+                $content = $artcontent;                
+                break;
+			case 'wikipedia':
+				$artcontent = str_replace("href=\"/wiki","href=\"". $url , $artcontent);
+				$content = sprintf('<div class="%s">%s<p><a href="%s">' .
+							'<img src="/images/wikipedia.png" width="40"></img>' .
+							" " . JText::_('COM_CONTENT_READ_MORE') . 
+							$article . 
+							' ... </a></p></div>', $class, $artcontent, $url . '/' . $subject);
+				break;
 		}
 		return $content;
 	}
