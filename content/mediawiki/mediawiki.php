@@ -106,16 +106,16 @@ class PlgSystemMediaWiki extends JPlugin
 	}
     
 	
-	protected function get_file_contents($url) {
+	protected function file_get_contents($url) {
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);		
 		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
-		curl_setopt ($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt ($ch,CURLOPT_CONNECTTIMEOUT,120);
-		curl_setopt ($ch,CURLOPT_TIMEOUT,120);
-		curl_setopt ($ch,CURLOPT_MAXREDIRS,10);		
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,120);
+		curl_setopt($ch, CURLOPT_TIMEOUT,120);
+		curl_setopt($ch, CURLOPT_MAXREDIRS,10);		
 		$result = curl_exec($ch);
 		curl_close($ch);
 		return $result;
@@ -160,10 +160,13 @@ class PlgSystemMediaWiki extends JPlugin
 			$class  = "col-md-4 well border border-primary";
 		}
         if(!strcmp($type, "joomla")) {
-            $html = $this->get_file_contents($url ."/index.php?option=com_content&view=article&tmpl=component&id=" . $subject);
+            $rooturl = $url;
+            $url = $url ."/index.php?option=com_content&view=article&tmpl=component&id=" . $subject;            
         } else {
-            $html = $this->get_file_contents($url . '/' . $subject);
+            $rooturl = $url;
+            $url = $url . '/' . $subject;
         }
+        
 		if (array_key_exists('tag', $_params)) {
 			$tag = trim($_params['tag']);
 		} else {
@@ -192,26 +195,36 @@ class PlgSystemMediaWiki extends JPlugin
 		
 		
 		// Get the first paragraph
-		$dom = str_get_html($html);//
-		$artcontent = $dom->find($tag, $no);
-		if ($search != NULL) {                
-			while ((strpos($artcontent, $search) == false )&&($no != 100)) {
-				$artcontent = $dom->find($tag, $no++);
-			}
+		//$html = file_get_contents($url);
+        if ($type == 'mediawiki') {
+            $dom = str_get_html($this->file_get_contents($url));
+        }else {
+            $dom = file_get_html($url);
+        }    
+        
+        if ($dom) {
+            $artcontent = $dom->find($tag, $no);
+            if ($search != NULL) {                
+                while ((strpos($artcontent, $search) == false )&&($no != 100)) {
+                    $artcontent = $dom->find($tag, $no++);
+                }
+            }
+            $artcontent = str_replace("src=\"/","src=\"". $url, $artcontent);
 		}
-		$artcontent = str_replace("src=\"/","src=\"". $url, $artcontent);
-		
+        else {
+            $artcontent = "Error retrieving " . $url;
+        }
 		switch ($type) {
 			case 'mediawiki':			
 				if ($full == false) {
 					if ($img) {
-						$simage = sprintf("%s/favicon.ico", $url);
+						$simage = sprintf("%s/favicon.ico", $rooturl);
 					}
 					else {
 						$simage = "/images/wikipedia.png";
 					}
-					$content = sprintf('<div class="%s">%s<p><a href="%s/%s"><img src="%s" ></img>', 
-											$class, $artcontent, $url, $subject, $simage)  .
+					$content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
+											$class, $artcontent, $url, $simage)  .
 											" " . 
 											JText::_('COM_CONTENT_READ_MORE') .
 											'</p></a></div>';
@@ -228,7 +241,7 @@ class PlgSystemMediaWiki extends JPlugin
 							'<img src="/images/wikipedia.png" width="40"></img>' .
 							" " . JText::_('COM_CONTENT_READ_MORE') . 
 							$article . 
-							' ... </a></p></div>', $class, $artcontent, $url . '/' . $subject);
+							' ... </a></p></div>', $class, $artcontent, $url);
 				break;
 		}
 		return $content;
