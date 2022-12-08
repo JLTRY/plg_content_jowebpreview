@@ -92,11 +92,11 @@ class PlgSystemMediaWiki extends JPlugin
 							$_result[$key] = $value;
 						}
                         if (!strcmp($pattern, "joomla")) {
-                            $uri = Uri::getInstance();                            
-                            $_result['url'] = $uri->toString();
+                            $uri = Uri::root();
+                            $_result['url'] = $uri;
                             $_result['tag'] = "div.item-page";
                         }
-						$p_content = $this->mediawikiarticle($pattern, $_result);								
+						$p_content = $this->mediawikiarticle($pattern, $_result);
 						$row->text = str_replace(sprintf("{%s " . $matches[1][$i] . "}", $pattern), $p_content, $row->text);
 					}
 				}
@@ -161,7 +161,7 @@ class PlgSystemMediaWiki extends JPlugin
 		}
         if(!strcmp($type, "joomla")) {
             $rooturl = $url;
-            $url = $url ."/index.php?option=com_content&view=article&tmpl=component&id=" . $subject;            
+            $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;            
         } else {
             $rooturl = $url;
             $url = $url . '/' . $subject;
@@ -196,7 +196,7 @@ class PlgSystemMediaWiki extends JPlugin
 		
 		// Get the first paragraph
 		//$html = file_get_contents($url);
-        if ($type == 'mediawiki') {
+        if (($type == 'mediawiki') || ($type == 'joomla')) {
             $dom = str_get_html($this->file_get_contents($url));
         }else {
             $dom = file_get_html($url);
