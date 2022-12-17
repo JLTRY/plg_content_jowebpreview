@@ -33,19 +33,6 @@ class PlgSystemMediaWiki extends JPlugin
 		parent::__construct( $subject, $params );
 	}
 
-	/**
-	* Example prepare content method in Joomla 1.5
-	*
-	* Method is called by the view
-	*
-	* @param object The article object. Note $article->text is also available
-	* @param object The article params
-	* @param int The 'page' number
-	*/
-	function onPrepareContent( &$article, &$params, $limitstart )
-	{
-		return $this->OnPrepareRow($article);
-	}
 
  	/**
 	* Example prepare content method in Joomla 1.6/1.7/2.5
@@ -172,6 +159,11 @@ class PlgSystemMediaWiki extends JPlugin
 		} else {
 			$tag = 'p';
 		}
+        if (array_key_exists('child', $_params)) {
+			$child = true;
+		} else {
+			$child = false;
+		}
 		if (array_key_exists('no', $_params)) {
 			$no = (int)$_params['no'];
 		} else {
@@ -202,12 +194,15 @@ class PlgSystemMediaWiki extends JPlugin
             $dom = file_get_html($url);
         }    
         
-        if ($dom) {
+        if ($dom) {            
             $artcontent = $dom->find($tag, $no);
             if ($search != NULL) {                
                 while ((strpos($artcontent, $search) == false )&&($no != 100)) {
                     $artcontent = $dom->find($tag, $no++);
                 }
+            }
+            if ($child) {
+                $artcontent = $artcontent->text();
             }
             $artcontent = str_replace("src=\"/","src=\"". $url, $artcontent);
 		}
