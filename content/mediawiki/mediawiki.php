@@ -183,16 +183,15 @@ class PlgContentMediaWiki extends JPlugin
 		
 		
 		// Get the first paragraph
-		$html = file_get_contents($url);
-        if ( ! $html) {
+		//$html = file_get_contents($url);
+        //if ( ! $html) {
             if (($type == 'mediawiki') || ($type == 'joomla')) {
                 $dom = str_get_html($this->file_get_contents($url));
             }else {
                 $dom = file_get_html($url);
             }    
-        }
-        else {
-            $dom = str_get_html($html);
+        if (!$dom) {
+           $dom = str_get_html( file_get_contents($url));
         }
         if ($dom) {            
             $artcontent = $dom->find($tag, $no);
