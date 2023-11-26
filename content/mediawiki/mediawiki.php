@@ -14,6 +14,8 @@ jimport( 'joomla.plugin.plugin' );
 define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s (.*?)}#s");
 require_once(dirname(__FILE__) . '/simple_html_dom.php');
 use Joomla\CMS\Uri\Uri;
+use Joomla\CMS\Plugin\CMSPlugin as JPlugin;
+use Joomla\CMS\Language\Text as JText; 	 
 
 /**
 * WikipediaArticle Content Plugin
@@ -39,14 +41,14 @@ class PlgContentMediaWiki extends JPlugin
 	function onPrepareRow(&$row) 
 	{  
 		//Escape fast
-        if (!$this->params->get('enabled', 1)) {
-            return true;
-        }
+		if (!$this->params->get('enabled', 1)) {
+			return true;
+		}
 
- 		if ( (strpos( $row->text, '{wikipedia' ) === false ) && 
-             (strpos( $row->text, '{mediawiki' ) === false ) && 
-             (strpos( $row->text, '{joomla' ) === false )){
-            return true;
+		if ( (strpos( $row->text, '{wikipedia' ) === false ) && 
+			 (strpos( $row->text, '{mediawiki' ) === false ) && 
+			 (strpos( $row->text, '{joomla' ) === false )){
+			return true;
 		}
 		$patterns = array("mediawiki", "wikipedia", "joomla");
 		foreach ($patterns as $pattern) {
@@ -67,11 +69,11 @@ class PlgContentMediaWiki extends JPlugin
 							$value = substr($pair, $pos + 1);
 							$_result[$key] = $value;
 						}
-                        if (!strcmp($pattern, "joomla")) {
-                            $uri = Uri::root();
-                            $_result['url'] = $uri;
-                            $_result['tag'] = "div.item-page";
-                        }
+						if (!strcmp($pattern, "joomla")) {
+							$uri = Uri::root();
+							$_result['url'] = $uri;
+							$_result['tag'] = "div.item-page";
+						}
 						$p_content = $this->mediawikiarticle($pattern, $_result);
 						$row->text = str_replace(sprintf("{%s " . $matches[1][$i] . "}", $pattern), $p_content, $row->text);
 					}
@@ -80,31 +82,31 @@ class PlgContentMediaWiki extends JPlugin
 		}
 		return true; 
 	}
-    
+	
 	
 	protected function file_get_contents($url) {
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);		
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);	
 		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,120);
 		curl_setopt($ch, CURLOPT_TIMEOUT,120);
-		curl_setopt($ch, CURLOPT_MAXREDIRS,10);		
+		curl_setopt($ch, CURLOPT_MAXREDIRS,10);
 		$result = curl_exec($ch);
 		curl_close($ch);
 		return $result;
 	}
-    
-    
+	
+	
  	/**
 	* Function to insert MediaWiki introduction
 	*
 	* Method is called by the onContentPrepare or onPrepareContent
 	*
 	* @param string The text string to find and replace
-	*/       
+	*/	   
 	function mediawikiarticle($type, $_params )
 	{
 		$content = "";
@@ -114,7 +116,7 @@ class PlgContentMediaWiki extends JPlugin
 		}
 		if (array_key_exists('name', $_params))
 		{
-            $subject = $_params['name'];
+			$subject = $_params['name'];
 		}
 		elseif (array_key_exists('subject', $_params))
 		{
@@ -125,7 +127,7 @@ class PlgContentMediaWiki extends JPlugin
 		}
 		if (!array_key_exists('url', $_params))
 		{
-		    $url = 'http://fr.wikipedia.org/wiki';
+			$url = 'http://fr.wikipedia.org/wiki';
 		} else {
 			$url = rtrim($_params['url']);
 		}
@@ -135,22 +137,22 @@ class PlgContentMediaWiki extends JPlugin
 		else {
 			$divclass  = "col-md-4 well border border-primary";
 		}
-        if (array_key_exists('class', $_params)) {
+		if (array_key_exists('class', $_params)) {
 			$class  =  $_params['class'];
-		}		
-        if(!strcmp($type, "joomla")) {
-            $rooturl = $url;
-            $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;            
-        } else {
-            $rooturl = $url . '/';
-            $url = $url . '/' . $subject;
-        }        
+		}
+		if(!strcmp($type, "joomla")) {
+			$rooturl = $url;
+			$url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;			
+		} else {
+			$rooturl = $url ;
+			$url = $url . '/' . $subject;
+		}
 		if (array_key_exists('tag', $_params)) {
 			$tag = trim($_params['tag']);
 		} else {
 			$tag = 'p';
 		}
-        if (array_key_exists('child', $_params)) {
+		if (array_key_exists('child', $_params)) {
 			$child = (bool)$_params['child'];
 		} else {
 			$child = false;
@@ -175,59 +177,58 @@ class PlgContentMediaWiki extends JPlugin
 		} else {
 			$full = true;
 		}
-        if (array_key_exists('text', $_params)) {
+		if (array_key_exists('text', $_params)) {
 			$text = $_params['text'];
 		} else {
 			$text = "";
-		}	
-		
-		
-		// Get the first paragraph
-		//$html = file_get_contents($url);
-        //if ( ! $html) {
-            if (($type == 'mediawiki') || ($type == 'joomla')) {
-                $dom = str_get_html($this->file_get_contents($url));
-            }else {
-                $dom = file_get_html($url);
-            }    
-        if (!$dom) {
-           $dom = str_get_html( file_get_contents($url));
-        }
-        if ($dom) {            
-            $artcontent = $dom->find($tag, $no);
-            if ($search != NULL) {                
-                while ((strpos($artcontent, $search) == false )&&($no != 100)) {
-                    $artcontent = $dom->find($tag, $no++);
-                }
-            }
-            if ($full && $class && $artcontent) {
-                $artcontent->setAttribute('class', $class);
-            }
-            if ($artcontent && $child) {            
-                $artcontent = $artcontent->text();  
-            }    
-            $artcontent = str_replace("src=\"/", "src=\"". $rooturl, $artcontent);
-            $artcontent = str_replace("href=\"/", "href=\"" . $rooturl .'/', $artcontent);            
 		}
-        else {
-            $artcontent = "Error retrieving " . $url;
-        }
+		if (($type == 'mediawiki') || ($type == 'joomla')) {
+			$dom = str_get_html($this->file_get_contents($url));
+		}else {
+			$dom = file_get_html($url);
+		}
+		if (!$dom) {
+			$dom = str_get_html( file_get_contents($url));
+		}
+		if ($dom) {
+			$artcontent = $dom->find($tag, $no);
+			if ($search != NULL) {
+				while ((strpos($artcontent, $search) == false )&&($no != 100)) {
+					$artcontent = $dom->find($tag, $no++);
+				}
+			}
+			if (!$artcontent) {
+				$artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url;
+				$artcontent .= print_r($dom, true);
+			}
+			if ($full && $class && $artcontent) {
+				$artcontent->setAttribute('class', $class);
+			}
+			if ($artcontent && $child) {
+				$artcontent = $artcontent->text();  
+			}
+			$artcontent = str_replace("src=\"/", "src=\"". $rooturl . '/' , $artcontent);
+			$artcontent = str_replace("href=\"/", "href=\"" . $rooturl . '/', $artcontent);
+		}
+		else {
+			$artcontent = "Error retrieving " . $url;
+		}
 		switch ($type) {
-			case 'mediawiki':			
-				if ($full == false) {                                
+			case 'mediawiki':
+				if ($full == false) {
 					$content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
 											$divclass, $artcontent, $url, $simage)  .
 											" " . 
 											JText::_('COM_CONTENT_READ_MORE') .
-                                            $text .
+											$text .
 											'</p></a></div>';
 				} else {
 					$content = $artcontent ;
 				}
 				break;
-            case 'joomla':	            
-                $content = $artcontent;                
-                break;
+			case 'joomla':
+				$content = $artcontent;
+				break;
 			case 'wikipedia':
 				$artcontent = str_replace("href=\"/wiki","href=\"". $url , $artcontent);
 				$content = sprintf('<div class="%s">%s<p><a href="%s">' .

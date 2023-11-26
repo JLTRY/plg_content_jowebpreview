@@ -11,5 +11,6 @@
 	<description>MediawikiArticle plugin, use it with {mediawiki url=url}</description>
 	<files>
 		<filename plugin="mediawiki">mediawiki.php</filename>
+		<filename plugin="mediawiki">simple_html_content.php</filename>
 	</files>
 </extension>
