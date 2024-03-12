@@ -87,7 +87,7 @@ class PlgContentMediaWiki extends JPlugin
 	protected function file_get_contents($url) {
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);	
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -142,10 +142,13 @@ class PlgContentMediaWiki extends JPlugin
 		}
 		if(!strcmp($type, "joomla")) {
 			$rooturl = $url;
-			$url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;			
+			$url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
 		} else {
 			$rooturl = $url ;
-			$url = $url . '/' . $subject;
+			if ($subject != '') {
+				$url = $url . '/' . $subject;
+			}
+			$url = str_replace(" ", "%20", $url);
 		}
 		if (array_key_exists('tag', $_params)) {
 			$tag = trim($_params['tag']);
@@ -188,7 +191,7 @@ class PlgContentMediaWiki extends JPlugin
 			$dom = file_get_html($url);
 		}
 		if (!$dom) {
-			$dom = str_get_html( file_get_contents($url));
+			$dom = str_get_html(file_get_contents($url));
 		}
 		if ($dom) {
 			$artcontent = $dom->find($tag, $no);
@@ -199,9 +202,9 @@ class PlgContentMediaWiki extends JPlugin
 			}
 			if (!$artcontent) {
 				$artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url;
-				$artcontent .= print_r($dom, true);
+				$artcontent .= $dom->innertext;
 			}
-			if ($full && $class && $artcontent) {
+			if ($full && $class && $artcontent && is_object($artcontent)) {
 				$artcontent->setAttribute('class', $class);
 			}
 			if ($artcontent && $child) {
