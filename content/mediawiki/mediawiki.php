@@ -12,16 +12,22 @@
 defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.plugin.plugin' );
 define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s (.*?)}#s");
-require_once(dirname(__FILE__) . '/simple_html_dom.php');
+
+require_once(dirname(__FILE__) . '/simplehtmldom/simple_html_dom.php');
+
+use Joomla\CMS\Http\Response;
+use Joomla\CMS\Http\Transport\CurlTransport;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
-use Joomla\CMS\Plugin\CMSPlugin as JPlugin;
-use Joomla\CMS\Language\Text as JText; 	 
+use Joomla\Uri\UriInterface;
+
 
 /**
 * WikipediaArticle Content Plugin
 *
 */
-class PlgContentMediaWiki extends JPlugin
+class PlgContentMediaWiki extends CMSPlugin
 {
 
 
@@ -84,22 +90,30 @@ class PlgContentMediaWiki extends JPlugin
 	}
 	
 	
-	protected function file_get_contents($url) {
+	protected function curl_get_contents($url) {
 		$ch = curl_init();
+		$path_cookie = 'cookie.txt';
+		if (!file_exists(realpath($path_cookie))) touch($path_cookie);
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,120);
-		curl_setopt($ch, CURLOPT_TIMEOUT,120);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT,3);
+		curl_setopt($ch, CURLOPT_TIMEOUT,3);
 		curl_setopt($ch, CURLOPT_MAXREDIRS,10);
+		curl_setopt($ch, CURLOPT_COOKIESESSION, true);
+		curl_setopt($ch, CURLOPT_COOKIEJAR, realpath($path_cookie));
 		$result = curl_exec($ch);
+		$errno = curl_errno($ch);
+		if ($errno) {
+			$result = curl_error($ch);
+		}
 		curl_close($ch);
-		return $result;
+		return array($errno,$result);
 	}
-	
-	
+
+
  	/**
 	* Function to insert MediaWiki introduction
 	*
@@ -139,6 +153,8 @@ class PlgContentMediaWiki extends JPlugin
 		}
 		if (array_key_exists('class', $_params)) {
 			$class  =  $_params['class'];
+		} else {
+			$class = null;
 		}
 		if(!strcmp($type, "joomla")) {
 			$rooturl = $url;
@@ -185,15 +201,32 @@ class PlgContentMediaWiki extends JPlugin
 		} else {
 			$text = "";
 		}
-		if (($type == 'mediawiki') || ($type == 'joomla')) {
-			$dom = str_get_html($this->file_get_contents($url));
+		if (($type == 'mediawiki')) {
+			$curltrsprt = new CurlTransport();
+			try {
+				$response = $curltrsprt->request('GET', new Uri($url), null, [], 5, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
+				$dom = str_get_html($response->body);
+				$errno = $response->code;
+			}
+			catch(RuntimeException $e) {
+				$errno = -2;
+				$dom = $e->getMessage();
+			}
+		}
+		elseif (($type == 'joomla')) {
+			list($errno, $result) = $this->curl_get_contents($url);
+			if ($errno) {
+				$dom = $result;
+			} else {
+				$dom = str_get_html($result);
+			}
 		}else {
 			$dom = file_get_html($url);
 		}
 		if (!$dom) {
 			$dom = str_get_html(file_get_contents($url));
 		}
-		if ($dom) {
+		if (is_object($dom)) {
 			$artcontent = $dom->find($tag, $no);
 			if ($search != NULL) {
 				while ((strpos($artcontent, $search) == false )&&($no != 100)) {
@@ -201,7 +234,7 @@ class PlgContentMediaWiki extends JPlugin
 				}
 			}
 			if (!$artcontent) {
-				$artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url;
+				$artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url ;
 				$artcontent .= $dom->innertext;
 			}
 			if ($full && $class && $artcontent && is_object($artcontent)) {
@@ -214,7 +247,7 @@ class PlgContentMediaWiki extends JPlugin
 			$artcontent = str_replace("href=\"/", "href=\"" . $rooturl . '/', $artcontent);
 		}
 		else {
-			$artcontent = "Error retrieving " . $url;
+			$artcontent = "Error retrieving " . $url .":" . $errno . ":error" . $dom;;
 		}
 		switch ($type) {
 			case 'mediawiki':
@@ -222,7 +255,7 @@ class PlgContentMediaWiki extends JPlugin
 					$content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
 											$divclass, $artcontent, $url, $simage)  .
 											" " . 
-											JText::_('COM_CONTENT_READ_MORE') .
+											(is_object($dom)?Text::_('COM_CONTENT_READ_MORE'):$url) .
 											$text .
 											'</p></a></div>';
 				} else {
@@ -236,7 +269,7 @@ class PlgContentMediaWiki extends JPlugin
 				$artcontent = str_replace("href=\"/wiki","href=\"". $url , $artcontent);
 				$content = sprintf('<div class="%s">%s<p><a href="%s">' .
 							'<img src="/images/wikipedia.png" width="40"></img>' .
-							" " . JText::_('COM_CONTENT_READ_MORE') . 
+							" " . Text::_('COM_CONTENT_READ_MORE') . 
 							$article . 
 							' ... </a></p></div>', $divclass, $artcontent, $url);
 				break;
