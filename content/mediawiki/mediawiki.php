@@ -11,7 +11,7 @@
 // Check to ensure this file is included in Joomla!
 defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport( 'joomla.plugin.plugin' );
-define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s (.*?)}#s");
+define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s ([^}]*?)}#s");
 
 require_once(dirname(__FILE__) . '/simplehtmldom/simple_html_dom.php');
 
@@ -204,13 +204,14 @@ class PlgContentMediaWiki extends CMSPlugin
 		if (($type == 'mediawiki')) {
 			$curltrsprt = new CurlTransport();
 			try {
-				$response = $curltrsprt->request('GET', new Uri($url), null, [], 5, "Mozilla/5.0 (Windows NT 6.1; rv:19.0) Gecko/20100101 Firefox/19.0");
+				$response = $curltrsprt->request('GET', new Uri($url), null, [], 5, "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36");
 				$dom = str_get_html($response->body);
 				$errno = $response->code;
 			}
 			catch(RuntimeException $e) {
 				$errno = -2;
-				$dom = $e->getMessage();
+				$content = $e->getMessage() . "<br>" . print_r($_params, true);
+                return $content;
 			}
 		}
 		elseif (($type == 'joomla')) {
@@ -252,7 +253,7 @@ class PlgContentMediaWiki extends CMSPlugin
 			$artcontent = str_replace("href=\"/", "href=\"" . $rooturl . '/', $artcontent);
 		}
 		else {
-			$artcontent = "Error retrieving " . $url .":" . $errno . ":error" . $dom;;
+			$artcontent = "Error retrieving " . $url .":" . $errno . ":error" . $dom;
 		}
 		switch ($type) {
 			case 'mediawiki':
