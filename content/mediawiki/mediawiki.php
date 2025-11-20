@@ -242,6 +242,7 @@ class PlgContentMediaWiki extends CMSPlugin
 			if (!$artcontent) {
 				$artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url ;
 				$artcontent .= $dom->innertext;
+                return $artcontent;
 			}
 			if ($full && $class && $artcontent && is_object($artcontent)) {
 				$artcontent->setAttribute('class', $class);
