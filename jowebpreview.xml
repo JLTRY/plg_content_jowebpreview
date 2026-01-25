@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="content" method="upgrade">
+	<name>PLG_CONTENT_JOWEBPREVIEW</name>
+	<author>Jean-Luc TRYOEN</author>
+	<creationDate>October 2020</creationDate>
+	<copyright>Copyright (C) 2012 - 2025 Jean-Luc TRYOEN. All rights reserved.</copyright>
+	<license>http://www.gnu.org/licenses/gpl-3.0.html GNU/GPL</license>
+	<authorEmail>jltryoen@orange.fr</authorEmail>
+	<authorUrl>www.jltryoen.fr</authorUrl>
+	<version>1.0.1</version>
+	<description>PLG_CONTENT_JOWEBPREVIEW_DESCRIPTION</description>
+	<namespace path="src">JLTRY\Plugin\Content\JOWebPreview</namespace>
+	<files>
+		<folder plugin="jowebpreview">services</folder>
+		<folder>src</folder>
+		<folder>language</folder>
+		<folder>lib</folder>
+	</files>
+	<updateservers>
+		<server type="extension" priority="1" name="JO's Web Preview update">https://raw.githubusercontent.com/JLTRY/plg_jowebpreview/master/plg_content_jowebpreview-update.xml</server>
+	</updateservers>
+</extension>

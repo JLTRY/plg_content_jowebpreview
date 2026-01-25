@@ -1,0 +1,3 @@
+[submodule "lib/simplehtmldom"]
+	path = lib/simplehtmldom
+	url = https://git.code.sf.net/p/simplehtmldom/repository

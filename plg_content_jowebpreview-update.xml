@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+	<update>
+		<name>JO Custom Code</name>
+		<description>JO's Custom Code is a module that  you can add all kinds of codes to your articles</description>
+		<element>mod_jocustomcode</element>
+		<type>module</type>
+		<client>site</client>
+		<version>1.0.1</version>
+		<infourl title="JO Custom Code">http://www.jltryoen.fr</infourl>
+		<downloads>
+			<downloadurl type="full" format="zip">https://github.com/JLTRY/plg_jouserfields/releases/download/v1.0.1/plg_content_jouserfields-1.0.1.zip</downloadurl>
+		</downloads>
+		<tags>
+			<tag>Stable</tag>
+		</tags>
+		<maintainer>JL TRYOEN</maintainer>
+		<maintainerurl>http://www.jltryoen.fr</maintainerurl>
+		<php_minimum>8.0</php_minimum>
+		<targetplatform name="joomla" version="(4\.[01234]|5\.[01234]|6\.[0])"/>
+		<sha256>11EFF41FD57DEBFBE80C6468F2F525DD639DEC12ABA16CE4A6FD7AF5908F107C</sha256>
+		<sha384>8D9FB6FA47261F0A34C61AC67557016091B0D320BA854D255E55C477119A4635B56F794218A10FCEA5DC5E30A5F61C6E</sha384>
+		<sha512>66DFEFA046AFAAF6C16449D0ADF0A83476E17C343329D3798F62BA76F2FD6C7CF985F589B332976A2171DE36D4364D17B905790A59CE05C4154B3102201EDF15</sha512>
+	</update>
+</updates>
+
