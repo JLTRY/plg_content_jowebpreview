@@ -11,8 +11,9 @@
 */
 
 use JLTRY\Plugin\Content\JOWebPreview\Extension\JOWebPreview;
-use Joomla\CMS\Extension\PluginInterface;
 
+use Joomla\CMS\Extension\PluginInterface;
+use Joomla\CMS\Extension\Service\Provider\HelperFactory;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\PluginHelper;
@@ -51,5 +52,6 @@ return new class() implements ServiceProviderInterface
                     return $plugin;
                 }
             );
+            $container->registerServiceProvider(new HelperFactory('\\JLTRY\\Plugin\\Content\\JOWebPreview\\Helper'));
     }
 };

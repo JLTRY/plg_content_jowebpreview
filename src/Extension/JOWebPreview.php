@@ -9,7 +9,7 @@
 */
 namespace JLTRY\Plugin\Content\JOWebPreview\Extension;
 
-require_once(dirname(__FILE__) . '/../../lib/simplehtmldom/simple_html_dom.php');
+//require_once(dirname(__FILE__) . '/../../lib/simplehtmldom/simple_html_dom.php');
 
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\CMS\Language\Text;
@@ -19,7 +19,7 @@ use Joomla\CMS\Utility\Utility;
 use Joomla\Event\SubscriberInterface;
 use Joomla\Uri\UriInterface;
 use Joomla\Utilities\ArrayHelper;
-
+use JLTRY\Plugin\Content\JOWebPreview\Helper\JOWebPreviewHelper;
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -39,19 +39,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                 ];
     }
 
-    public static function parseAttributes($string, &$retarray)
-    {
-        $pairs = explode(';', trim($string));
-        foreach ($pairs as $pair) {
-            if ($pair == "") {
-                continue;
-            }
-            $pos = strpos($pair, "=");
-            $key = substr($pair, 0, $pos);
-            $value = substr($pair, $pos + 1);
-            $retarray[$key] = $value;
-        }
-    }
+
 
     /**
     * Example prepare content method in Joomla 1.6/1.7/2.5
@@ -93,7 +81,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         $inline_params = $matches[1][$i];
                         if ( strpos( $inline_params, "\"") === false ) {
                             $localparams = array();
-                            self::parseAttributes($inline_params, $localparams);
+                            JOWebPreviewHelper::parseAttributes($inline_params, $localparams);
                         }
                         else {
                             $localparams = Utility::parseAttributes($inline_params);
@@ -129,130 +117,90 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         {
             return  "errorf:" . print_r($_params, true);
         }
-        if (array_key_exists('name', $_params))
-        {
-            $subject = $_params['name'];
-        }
-        elseif (array_key_exists('subject', $_params))
-        {
-            $subject = $_params['subject'];
-        }
-        else {
-            $subject = '';
-        }
-        if (!array_key_exists('url', $_params))
-        {
-            $url = 'http://fr.wikipedia.org/wiki';
-        } else {
-            $url = rtrim($_params['url']);
-        }
-        if (array_key_exists('divclass', $_params)) {
-            $divclass  =  $_params['divclass'];
-        }
-        else {
-            $divclass  = "col-md-4 well border border-primary";
-        }
-        if (array_key_exists('class', $_params)) {
-            $class  =  $_params['class'];
-        } else {
-            $class = null;
-        }
+        $subject = $_params['name'] ?? $_params['subject']?? '';
+        $url = $_params['url'] ?? 'http://fr.wikipedia.org/wiki';
+        $divclass  =  $_params['divclass'] ?? "col-md-6 well border border-primary p-3";
+        $class  =  $_params['class'] ?? '';
+        $tag = trim($_params['tag']?? 'p');
+        $child = (bool)$_params['child']?? false;
+        $no = (int)$_params['no']?? 0;
+        $search = $_params['search'] ?? NULL;
+        $mode = $_params['mode'] ?? "full";
+        $defdescription = $_params['description'] ?? "";
+        $defimage = $_params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
+        $max = $_params['max'] ?? 500;
         if(!strcmp($type, "joomla")) {
-            $rooturl = $url;
+            $uri = Uri::getInstance();
+            $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
             $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
-        } else {
-            $rooturl = $url ;
+        } elseif ( !strcmp($type, "wikipedia")) {
+            $url = 'http://fr.wikipedia.org/wiki';
             if ($subject != '') {
-                $url = $url . '/' . $subject;
+                $url = $url . '/' . urlencode($subject);
             }
-            $url = str_replace(" ", "%20", $url);
-        }
-        if (array_key_exists('tag', $_params)) {
-            $tag = trim($_params['tag']);
         } else {
-            $tag = 'p';
-        }
-        if (array_key_exists('child', $_params)) {
-            $child = (bool)$_params['child'];
-        } else {
-            $child = false;
-        }
-        if (array_key_exists('no', $_params)) {
-            $no = (int)$_params['no'];
-        } else {
-            $no = 0;
-        }
-        if (array_key_exists('search', $_params)) {
-            $search = $_params['search'];
-        } else {
-            $search = NULL;
-        }
-        if (array_key_exists('img', $_params)) {
-            $simage = $_params['img'];
-        } else {
-            $simage = "/images/web_link.png";
-        }
-        if (array_key_exists('full', $_params)) {
-            $full = (bool)$_params['full'];
-        } else {
-            $full = true;
-        }
-        if (array_key_exists('text', $_params)) {
-            $text = $_params['text'];
-        } else {
-            $text = "";
-        }
-        $context = stream_context_create(array(
-            "http" => array(
-                "header" => "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
-            )
-        ));
-        $dom = file_get_html($url, false, $context);
-        if (!$dom) {
-            $dom = str_get_html(file_get_contents($url));
-        }
-        if (is_object($dom)) {
-            $artcontent = $dom->find($tag, $no);
-            if ($search != NULL) {
-                while ((strpos($artcontent, $search) == false )&&($no != 100)) {
-                    $artcontent = $dom->find($tag, $no++);
-                }
+            $uri = new Uri($url);
+            $rooturl = $uri->toString(['scheme', 'host', 'port']);
+            if ($subject != '') {
+                $url = $url . '/' . urlencode($subject);
             }
-            if (!$artcontent) {
-                $artcontent = "Error retrieving " . $tag . "no:" . $no . "in " . $url ;
-                $artcontent .= $dom->innertext;
-                return $artcontent;
-            }
-            if ($full && $class && $artcontent && is_object($artcontent)) {
-                $artcontent->setAttribute('class', $class);
-            }
-            if ($artcontent && $child) {
-                $artcontent = $artcontent->text();  
-            }
-            $artcontent = str_replace("src=\"/", "src=\"". $rooturl . '/' , $artcontent);
-            $artcontent = str_replace("href=\"/", "href=\"" . $rooturl . '/', $artcontent);
         }
-        else {
-            $artcontent = "Error retrieving " . $url .":" . $errno . ":error" . $dom;
+
+        $dom = JOWebPreviewHelper::loadHTML($url);
+         //returns if errors
+        if (!is_object($dom)) return $dom;
+        if ($mode != "preview") {
+            $artcontent = JOWebPreviewHelper::getDomTag(
+                                            $dom,
+                                            $tag,
+                                            $no,
+                                            $search,
+                                            $class,
+                                            $child);
+            //returns if errors
+            if (!is_object($artcontent)) return $artcontent;
         }
         switch ($type) {
-            case 'mediawiki':
-                if ($full == false) {
-                    $content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
-                                            $divclass, $artcontent, $url, $simage)  .
-                                            " " . 
-                                            (is_object($dom)?Text::_('COM_CONTENT_READ_MORE'):$url) .
-                                            $text .
-                                            '</p></a></div>';
-                } else {
-                    $content = $artcontent ;
+            case 'webpreview':
+                switch($mode) {
+                    case "truncate":
+                        $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
+                        $content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
+                                                $divclass, $artcontent, $url, $defimage)  .
+                                                " " . 
+                                                Text::_('COM_CONTENT_READ_MORE') .
+                                                $text .
+                                                '</p></a></div>';
+                        break;
+                    case "preview":
+                        [$title ,$description, $img] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
+                        if ($img == "") {
+                            $img = $defimage;
+                        }
+                        if ($description == "") {
+                            $description = $defdescription;
+                        }
+                        $content = sprintf('<div class="%s"><a href="%s" style="color: currentcolor;"><img src="%s" ></img><h2 style="border-bottom:none!important;">%s</h2><br>%s', 
+                                                $divclass, $url, $img , $title, $description, $img) .
+                                          ' &raquo;&raquo;</a></div>';
+                        break;
+                    case "full":
+                        $html = $dom->saveHTML($artcontent);
+                        // Résoudre les chemins relatifs pour les attributs src et href
+                        if ($rooturl !== '') {
+                            $html = str_replace('src="/', 'src="' . rtrim($rooturl, '/') . '/', $html);
+                            $html = str_replace('href="/', 'href="' . rtrim($rooturl, '/') . '/', $html);
+                        }
+                        $content = $html;
+                        break;
+                    
                 }
                 break;
             case 'joomla':
-                $content = $artcontent;
+                $content = $dom->saveHTML($artcontent);
                 break;
             case 'wikipedia':
-                $artcontent = str_replace("href=\"/wiki","href=\"". $url , $artcontent);
+                $artcontent = str_replace("href=\"/wiki","href=\"". $url , $dom->saveHTML($artcontent));
                 $content = sprintf('<div class="%s">%s<p><a href="%s">' .
                             '<img src="/images/wikipedia.png" width="40"></img>' .
                             " " . Text::_('COM_CONTENT_READ_MORE') . 
