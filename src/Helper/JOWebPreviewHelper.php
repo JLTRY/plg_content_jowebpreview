@@ -103,13 +103,14 @@ class JOWebPreviewHelper
      *
      * @param DOMDocument $dom L'objet DOMDocument chargé avec le HTML de la page.
      * @param string $url L'URL de la page (pour résoudre les chemins relatifs des images).
-     * @return array Tableau contenant le titre, la description et l'URL de l'image.
+     * @return array Tableau contenant le titre, la description l'URL de l'image et le nom du site.
      */
     public static function getDomPreview(\DOMDocument $dom, string $url): array
     {
         $title = "";
         $description = "";
         $img = "";
+        $site_name = "";
 
         // Récupérer toutes les balises meta
         $metas = $dom->getElementsByTagName('meta');
@@ -119,18 +120,23 @@ class JOWebPreviewHelper
             $property = $meta->getAttribute('property');
 
             // Récupérer la description
-            if ($description === "" && (($name === "description") || ($property === "og:description"))) {
+            if ($description == "" && (($name == "description") || ($property === "og:description"))) {
                 $description = $meta->getAttribute('content');
             }
 
             // Récupérer le titre
-            if ($title === "" && ((strpos($name, "title") !== false) || (strpos($property, "title") !== false))) {
+            if ($title == "" && (($name == "title") || (strpos($property, "title") !== false))) {
                 $title = $meta->getAttribute('content');
             }
 
             // Récupérer l'image
-            if ($img === "" && ((strpos($name, "image") !== false) || (strpos($property, "image") !== false))) {
+            if ($img == "" && (($name == "image") || (strpos($property, "image") !== false))) {
                 $img = $meta->getAttribute('content');
+            }
+            
+            // Récupérer le site "og:site_name"
+            if ($site_name == "" && (($name == "site_name") || (strpos($property, "site_name") !== false))) {
+                $site_name = $meta->getAttribute('content');
             }
         }
 
@@ -153,7 +159,7 @@ class JOWebPreviewHelper
         }
 
         // Retourner les résultats
-        return [$title, $description, $img];
+        return [$title, $description, $img, $site_name];
     }
 
 

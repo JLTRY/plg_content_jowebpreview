@@ -91,7 +91,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                             $localparams['url'] = $uri;
                             $localparams['tag'] = "div.item-page";
                         }
-                        $p_content = $this->webpreview($pattern, $localparams);
+                        $p_content = $this->doWebPreview($pattern, $localparams);
                         $row->text = str_replace($matches[0][$i], $p_content, $row->text);
                     }
                 }
@@ -110,7 +110,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
     * @param type : joomla wikipedia or webpreview
     * @param _params : parameters
     */       
-    function webpreview($type, $_params )
+    private function doWebPreview($type, $_params )
     {
         $content = "";
         if (is_array( $_params )== false)
@@ -164,25 +164,34 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
             case 'webpreview':
                 switch($mode) {
                     case "truncate":
+                        [$title ,$description, $img, $site_name] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
+                        if ($img == "") {
+                            $img = $defimage;
+                        }
                         $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
-                        $content = sprintf('<div class="%s">%s<p><a href="%s"><img src="%s" ></img>', 
-                                                $divclass, $artcontent, $url, $defimage)  .
-                                                " " . 
-                                                Text::_('COM_CONTENT_READ_MORE') .
-                                                $text .
-                                                '</p></a></div>';
+                        $content = sprintf('<div class="%s"><h2>%s</h2> %s<p><a href="%s"><img src="%s" ></img>', 
+                                            $divclass, $title, $artcontent, $url, $img) .
+                                    " " . 
+                                    Text::_('COM_CONTENT_READ_MORE') .
+                                    $text .
+                                    '</p></a></div>';
                         break;
                     case "preview":
-                        [$title ,$description, $img] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
+                        [$title ,$description, $img, $site_name] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
                         if ($img == "") {
                             $img = $defimage;
                         }
                         if ($description == "") {
                             $description = $defdescription;
                         }
-                        $content = sprintf('<div class="%s"><a href="%s" style="color: currentcolor;"><img src="%s" ></img><h2 style="border-bottom:none!important;">%s</h2><br>%s', 
-                                                $divclass, $url, $img , $title, $description, $img) .
-                                          ' &raquo;&raquo;</a></div>';
+                        $content = sprintf('<div class="%s"><a href="%s" style="color: currentcolor;">' .
+                                            '<img src="%s" ></img>' .
+                                            '<h2 style="border-bottom:none!important;">%s</h2>' .
+                                            '<br>%s<br>%s', 
+                                             $divclass, $url, $img , $title, $description, $site_name) . 
+                                    '<br><p style="color: var(--link-color)">' .
+                                    Text::_('COM_CONTENT_READ_MORE') .
+                                    '</p></a></div>';
                         break;
                     case "full":
                         $html = $dom->saveHTML($artcontent);
