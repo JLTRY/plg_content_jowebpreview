@@ -131,21 +131,23 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $max = $_params['max'] ?? 500;
         if(!strcmp($type, "joomla")) {
             $uri = Uri::getInstance();
-            $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
             $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
         } elseif ( !strcmp($type, "wikipedia")) {
             $url = 'http://fr.wikipedia.org/wiki';
+            $uri = new Uri($url);
             if ($subject != '') {
                 $url = $url . '/' . urlencode($subject);
             }
         } else {
             $uri = new Uri($url);
-            $rooturl = $uri->toString(['scheme', 'host', 'port']);
             if ($subject != '') {
-                $url = $url . '/' . urlencode($subject);
+                $url = $url . '/' . $subject;
+                $url = str_replace(" ", "%20", $url);
             }
         }
-
+        $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
+        $host_name =  $uri->toString(['host']);
+        $icon = sprintf("http://www.google.com/s2/favicons?domain=%s", $host_name);
         $dom = JOWebPreviewHelper::loadHTML($url);
          //returns if errors
         if (!is_object($dom)) return $dom;
@@ -169,12 +171,11 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                             $img = $defimage;
                         }
                         $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
-                        $content = sprintf('<div class="%s"><h2>%s</h2> %s<p><a href="%s"><img src="%s" ></img>', 
-                                            $divclass, $title, $artcontent, $url, $img) .
-                                    " " . 
-                                    Text::_('COM_CONTENT_READ_MORE') .
-                                    $text .
-                                    '</p></a></div>';
+                        $content = sprintf('<div class="%s"><h2>%s</h2> %s<p>' .
+                                           '<a href="%s"><img src="%s" ></img><br>' .
+                                           '<span style="color: var(--link-color);margin-left: 1em;">' .
+                                            '<img src="%s" ></img>&nbsp;%s</span></a></div>', 
+                                            $divclass, $title, $artcontent, $url, $img, $icon, $site_name);
                         break;
                     case "preview":
                         [$title ,$description, $img, $site_name] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
@@ -187,11 +188,11 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         $content = sprintf('<div class="%s"><a href="%s" style="color: currentcolor;">' .
                                             '<img src="%s" ></img>' .
                                             '<h2 style="border-bottom:none!important;">%s</h2>' .
-                                            '<br>%s<br>%s', 
-                                             $divclass, $url, $img , $title, $description, $site_name) . 
-                                    '<br><p style="color: var(--link-color)">' .
-                                    Text::_('COM_CONTENT_READ_MORE') .
-                                    '</p></a></div>';
+                                            '<br>%s<br>' .
+                                            '<span style="color: var(--link-color);margin-left: 1em;">' .
+                                            '<img src="%s"></img>&nbsp;%s&nbsp;' .
+                                            '</span></a></div>', 
+                                             $divclass, $url, $img , $title, $description, $icon, $site_name);
                         break;
                     case "full":
                         $html = $dom->saveHTML($artcontent);
