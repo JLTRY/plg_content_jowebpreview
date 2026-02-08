@@ -163,6 +163,20 @@ class JOWebPreviewHelper
     }
 
 
+    /**
+     * Récupère le contenu d'une balise spécifique dans une page HTML, avec gestion des erreurs et des attributs.
+     *
+     * @param string $htmlContent Le contenu de la page à analyser.
+     * @return DOMNode Le contenu de l'élément ou un message d'erreur.
+     */
+    public static function stringtoDOM(string $htmlContent): string|\DOMDocument {
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true); // Désactiver les erreurs de parsing
+        $dom->loadHTML($htmlContent);
+        libxml_clear_errors();
+        return $dom;
+    }
+
 
     /**
      * Récupère le contenu d'une balise spécifique dans une page HTML, avec gestion des erreurs et des attributs.
@@ -184,13 +198,12 @@ class JOWebPreviewHelper
         if ($htmlContent === false) {
             return "Error: Unable to load URL: $url";
         }
-
-        $dom = new \DOMDocument();
-        libxml_use_internal_errors(true); // Désactiver les erreurs de parsing
-        $dom->loadHTML($htmlContent);
-        libxml_clear_errors();
-        return $dom;
+        return self::strintroDOM($htmlContent);
     }
+
+
+
+
 
     /**
      * Récupère le tag du document HTML

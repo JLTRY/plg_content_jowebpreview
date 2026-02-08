@@ -1,0 +1,14 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "favorites",
+  "version": "1.0",
+  "description": "webpreview is a plugin thats shows a preview of a web page",
+  "license": "GPL-2.0+",
+  "assets": [
+   {
+      "name": "plugin.jowebpreview",
+      "type": "style",
+      "uri": "plg_content_jowebpreview/jowebpreview.css"
+    }
+  ]
+}

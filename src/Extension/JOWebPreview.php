@@ -12,14 +12,17 @@ namespace JLTRY\Plugin\Content\JOWebPreview\Extension;
 //require_once(dirname(__FILE__) . '/../../lib/simplehtmldom/simple_html_dom.php');
 
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
+use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\Utility\Utility;
 use Joomla\Event\SubscriberInterface;
+use Joomla\CMS\Http\HttpFactory;
 use Joomla\Uri\UriInterface;
 use Joomla\Utilities\ArrayHelper;
 use JLTRY\Plugin\Content\JOWebPreview\Helper\JOWebPreviewHelper;
+
 
 // phpcs:disable PSR1.Files.SideEffects
 \defined('_JEXEC') or die;
@@ -32,6 +35,40 @@ define('PF_REGEX_MEDIAWIKI_PATTERN', "#{%s ([^}]*?)}#s");
 */
 class JOWebPreview extends CMSPlugin implements SubscriberInterface
 {
+    
+        /**
+     * Constructor
+     *
+     * @param   object  &$subject  The object to observe
+     * @param   array   $config    An array that holds the plugin configuration
+     *
+     * @access  protected
+     */
+    public function __construct(&$subject, $config)
+    {
+        parent::__construct($subject, $config);
+        $this->httpclient = HttpFactory::getHttp();
+    }
+
+    /**
+     * Récupère le contenu d'une balise spécifique dans une page HTML, avec gestion des erreurs et des attributs.
+     *
+     * @param string $url L'URL de la page à analyser.
+     * @return DOMNode Le contenu de l'élément ou un message d'erreur.
+     */
+    public function get(string $url): string | \DOMDocument{
+        $response = $this->httpclient->get($url);
+        if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
+            return sprintf(
+                    'Error code %s received requesting data: %s.',
+                    $response->getStatusCode(),
+                    $response->getBody()
+                );
+        }
+        return JOWebPreviewHelper::stringTODOM($response->getBody());
+    }
+
+
     public static function getSubscribedEvents(): array
     {
         return [
@@ -74,6 +111,9 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
             $count = count($matches[0]);
              // plugin only processes if there are any instances of the plugin in the text
             if ($count) {
+                $wa = Factory::getApplication()->getDocument()->getWebAssetManager();
+                $wa->getRegistry()->addRegistryFile('media/plg_content_jowebpreview/joomla.asset.json');
+                $wa->useStyle("plugin.jowebpreview");
                 $_result = array();
                 for ($i = 0; $i < $count; $i++)
                 {
@@ -148,7 +188,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
         $host_name =  $uri->toString(['host']);
         $icon = sprintf("http://www.google.com/s2/favicons?domain=%s", $host_name);
-        $dom = JOWebPreviewHelper::loadHTML($url);
+        $dom = $this->get($url);
          //returns if errors
         if (!is_object($dom)) return $dom;
         if ($mode != "preview") {
@@ -172,8 +212,8 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         }
                         $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
                         $content = sprintf('<div class="%s"><h2>%s</h2> %s<p>' .
-                                           '<a href="%s"><img src="%s" ></img><br>' .
-                                           '<span style="color: var(--link-color);margin-left: 1em;">' .
+                                           '<a  class="external" href="%s"><img src="%s" ></img><br>' .
+                                           '<span style="color: var(--link-color)">' .
                                             '<img src="%s" ></img>&nbsp;%s</span></a></div>', 
                                             $divclass, $title, $artcontent, $url, $img, $icon, $site_name);
                         break;
@@ -185,11 +225,11 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         if ($description == "") {
                             $description = $defdescription;
                         }
-                        $content = sprintf('<div class="%s"><a href="%s" style="color: currentcolor;">' .
+                        $content = sprintf('<div class="%s"><a class="external" href="%s" style="color: currentcolor;">' .
                                             '<img src="%s" ></img>' .
                                             '<h2 style="border-bottom:none!important;">%s</h2>' .
-                                            '<br>%s<br>' .
-                                            '<span style="color: var(--link-color);margin-left: 1em;">' .
+                                            '%s<br>' .
+                                            '<span style="color: var(--link-color)">' .
                                             '<img src="%s"></img>&nbsp;%s&nbsp;' .
                                             '</span></a></div>', 
                                              $divclass, $url, $img , $title, $description, $icon, $site_name);

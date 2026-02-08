@@ -1,4 +1,4 @@
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 PACKAGE = plg_content_jowebpreview
 ZIPFILE = $(PACKAGE)-$(VERSION).zip
 UPDATEFILE = $(PACKAGE)-update.xml

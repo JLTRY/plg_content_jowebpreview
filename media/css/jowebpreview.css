@@ -1,0 +1,8 @@
+
+a.external {
+	background-image: url( ../images/external-ltr.svg );
+	background-position: center right;
+	background-repeat: no-repeat;
+	background-size: 0.857em;
+	padding-right: 1em;
+}
