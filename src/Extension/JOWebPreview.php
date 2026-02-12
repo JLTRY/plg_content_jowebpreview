@@ -14,6 +14,7 @@ namespace JLTRY\Plugin\Content\JOWebPreview\Extension;
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\Utility\Utility;
@@ -96,7 +97,10 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         // In Joomla 4 a generic Event is passed
         // In Joomla 5 a concrete ContentPrepareEvent is passed
         [$context, $row, $params, $page] = array_values($event->getArguments());
-        if ( strpos($context, 'com_content') === false ) return true;
+        /*if ( strpos($context, 'com_content') === false ) {
+            $row->text .= $context;
+            return true;
+        }*/
         $patterns = array("webpreview", "wikipedia", "joomla");
         if ( !isset($row) )
         {
@@ -126,6 +130,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         else {
                             $localparams = Utility::parseAttributes($inline_params);
                         }
+                        //Log::add('OnContentPrepare: ' . print_r($localparams, true) , Log::WARNING, 'jowebpreview');
                         if (!strcmp($pattern, "joomla")) {
                             $uri = Uri::root();
                             $localparams['url'] = $uri;
@@ -212,7 +217,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         }
                         $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
                         $content = sprintf('<div class="%s"><h2>%s</h2> %s<p>' .
-                                           '<a  class="external" href="%s"><img src="%s" ></img><br>' .
+                                           '<a class="external" href="%s"><img src="%s" ></img><br>' .
                                            '<span style="color: var(--link-color)">' .
                                             '<img src="%s" ></img>&nbsp;%s</span></a></div>', 
                                             $divclass, $title, $artcontent, $url, $img, $icon, $site_name);

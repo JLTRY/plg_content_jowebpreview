@@ -9,10 +9,9 @@
 */
 namespace JLTRY\Plugin\Content\JOWebPreview\Helper;
 
-//require_once(dirname(__FILE__) . '/../../lib/simplehtmldom/simple_html_dom.php');
-
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\CMS\Language\Text;
+use Joomla\CMS\Log\Log;
 use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\Utility\Utility;
@@ -241,15 +240,21 @@ class JOWebPreviewHelper
         if (!$artcontent) {
             return array(null, "Error retrieving $tag no:$currentNo in $url\n", null) ;
         }
-
+        //Log::add('getDomTag class: ' . $class . "type" . get_class($artcontent) , Log::WARNING, 'jowebpreview');
         // Ajouter une classe si demandée
-        if ($class && $artcontent instanceof DOMElement) {
+        if ($class && $artcontent instanceof \DOMElement) {
+            Log::add('getDomTag found dom: ' . $class , Log::WARNING, 'jowebpreview');
             $artcontent->setAttribute('class', $class);
         }
 
         // Retourner uniquement le texte si $child est vrai
         if ($child) {
-            return array($dom, $artcontent->nodeValue);
+            //Log::add('getDomTag found child: ' . $class , Log::WARNING, 'jowebpreview');
+            if ($class && $artcontent->nodeValue instanceof \DOMElement) {
+                $artcontent->nodeValue->setAttribute('class', $class);
+                //Log::add('found child set class=>:' . $class , Log::WARNING, 'jowebpreview');
+            }
+            return $artcontent->nodeValue;
         }
 
         // Retourner le contenu complet de l'élément
