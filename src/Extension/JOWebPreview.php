@@ -61,9 +61,8 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $response = $this->httpclient->get($url);
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
             return sprintf(
-                    'Error code %s received requesting data: %s.',
-                    $response->getStatusCode(),
-                    $response->getBody()
+                    'Error code %s received requesting data',
+                    $response->getStatusCode()
                 );
         }
         return JOWebPreviewHelper::stringTODOM($response->getBody());
@@ -97,17 +96,18 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         // In Joomla 4 a generic Event is passed
         // In Joomla 5 a concrete ContentPrepareEvent is passed
         [$context, $row, $params, $page] = array_values($event->getArguments());
-        /*if ( strpos($context, 'com_content') === false ) {
-            $row->text .= $context;
-            return true;
-        }*/
-        $patterns = array("webpreview", "wikipedia", "joomla");
-        if ( !isset($row) )
+        if (!isset($row) || ($row == null))
         {
-            return true;
+            Log::add('row is null:', Log::WARNING, 'jowebpreview');
         }
-        if ( array_filter($patterns, function($key) { return strpos( $row->text, sprintf('{%s', $key)) !== false; }) === false ) {
-            return true;
+        if (!isset($row) || !is_object($row) || !property_exists($row, 'text')){
+            Log::add('row has no text:', Log::WARNING, 'jowebpreview');
+            return false;
+        }
+        //Log::add('row :' . print_r($row, true), Log::WARNING, 'jowebpreview');
+        $patterns = array("webpreview", "wikipedia", "joomla");
+        if ( array_filter($patterns, function($key)use ($row) { return strpos( $row->text, sprintf('{%s', $key)) !== false; }) === false ) {
+            return false;
         }
         foreach ($patterns as $pattern) {
             preg_match_all(sprintf(PF_REGEX_MEDIAWIKI_PATTERN, $pattern), $row->text, $matches);
@@ -155,25 +155,25 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
     * @param type : joomla wikipedia or webpreview
     * @param _params : parameters
     */       
-    private function doWebPreview($type, $_params )
+    private function doWebPreview($type, $params )
     {
         $content = "";
-        if (is_array( $_params )== false)
+        if (is_array( $params )== false)
         {
-            return  "errorf:" . print_r($_params, true);
+            return  "errorf:" . print_r($params, true);
         }
-        $subject = $_params['name'] ?? $_params['subject']?? '';
-        $url = $_params['url'] ?? 'http://fr.wikipedia.org/wiki';
-        $divclass  =  $_params['divclass'] ?? "col-md-6 well border border-primary p-3";
-        $class  =  $_params['class'] ?? '';
-        $tag = trim($_params['tag']?? 'p');
-        $child = (bool)$_params['child']?? false;
-        $no = (int)$_params['no']?? 0;
-        $search = $_params['search'] ?? NULL;
-        $mode = $_params['mode'] ?? "full";
-        $defdescription = $_params['description'] ?? "";
-        $defimage = $_params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
-        $max = $_params['max'] ?? 500;
+        $subject = $params['name'] ?? $params['subject']?? '';
+        $url = $params['url'] ?? 'http://fr.wikipedia.org/wiki';
+        $divclass  =  $params['divclass'] ?? "col-md-6 well border border-primary p-3";
+        $class  =  $params['class'] ?? '';
+        $tag = trim($params['tag']?? 'p');
+        $child = (bool)$params['child']?? false;
+        $no = (int)$params['no']?? 0;
+        $search = $params['search'] ?? NULL;
+        $mode = $params['mode'] ?? "full";
+        $defdescription = $params['description'] ?? "";
+        $defimage = $params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
+        $max = $params['max'] ?? 500;
         if(!strcmp($type, "joomla")) {
             $uri = Uri::getInstance();
             $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
@@ -193,10 +193,12 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
         $host_name =  $uri->toString(['host']);
         $icon = sprintf("http://www.google.com/s2/favicons?domain=%s", $host_name);
-        $dom = $this->get($url);
-         //returns if errors
-        if (!is_object($dom)) return $dom;
         if ($mode != "preview") {
+            $dom = $this->get($url);
+             //returns if errors
+            if (!is_object($dom)){
+                return $dom . "<br><a class=\"external\" href=\"". $url ."\">" . $url ."</a>";
+            }
             $artcontent = JOWebPreviewHelper::getDomTag(
                                             $dom,
                                             $tag,
@@ -223,9 +225,17 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                                             $divclass, $title, $artcontent, $url, $img, $icon, $site_name);
                         break;
                     case "preview":
-                        [$title ,$description, $img, $site_name] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
-                        if ($img == "") {
-                            $img = $defimage;
+                        foreach (array("site_name", "title", "description", "image") as $meta)
+                        {
+                            $$meta = $params["og:{$meta}"] ?? null;
+                        }
+                        if ($title == null && $description == null) {
+                            $dom = $this->get($url);
+                            if (!is_object($dom)) return $dom;
+                            [$title ,$description, $image, $site_name] = JOWebPreviewHelper::getDomPreview($dom, $rooturl);
+                        }
+                        if ($image == "") {
+                            $image = $defimage;
                         }
                         if ($description == "") {
                             $description = $defdescription;
@@ -237,7 +247,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                                             '<span style="color: var(--link-color)">' .
                                             '<img src="%s"></img>&nbsp;%s&nbsp;' .
                                             '</span></a></div>', 
-                                             $divclass, $url, $img , $title, $description, $icon, $site_name);
+                                             $divclass, $url, $image , $title, $description, $icon, $site_name);
                         break;
                     case "full":
                         $html = $dom->saveHTML($artcontent);

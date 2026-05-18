@@ -9,6 +9,7 @@
 */
 namespace JLTRY\Plugin\Content\JOWebPreview\Helper;
 
+use Joomla\Http\HttpFactory;
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\CMS\Language\Text;
 use Joomla\CMS\Log\Log;
@@ -32,6 +33,30 @@ use Joomla\Utilities\ArrayHelper;
  */
 class JOWebPreviewHelper
 {
+    
+    static $logAdded = false;
+    public static function addLogger() {
+        Log::addLogger(
+            array(
+             // Sets file name.
+             'text_file' => 'plg_jowebpreview.php',
+             // Sets the format of each line.
+             'text_entry_format' => '{DATETIME} {PRIORITY} {MESSAGE}'
+            ),
+            // Sets all but DEBUG log level messages to be sent to the file.
+            Log::ALL,
+            // The log category which should be recorded in this file.
+            array('plg_jowebpreview')
+        );
+    }
+
+    public static function Log($msg, $type = Log::WARNING){
+        if (!self::$logAdded) {
+            self::addLogger();
+            self::$logAdded = true;
+        }
+        Log::add($msg, $type, 'plg_jowebpreview');
+    }
     public static function parseAttributes($string, &$retarray)
     {
         $pairs = explode(';', trim($string));
@@ -113,7 +138,7 @@ class JOWebPreviewHelper
 
         // Récupérer toutes les balises meta
         $metas = $dom->getElementsByTagName('meta');
-
+        $matches = array();
         foreach ($metas as $meta) {
             $name = $meta->getAttribute('name');
             $property = $meta->getAttribute('property');
@@ -129,8 +154,9 @@ class JOWebPreviewHelper
             }
 
             // Récupérer l'image
-            if ($img == "" && (($name == "image") || (strpos($property, "image") !== false))) {
+            if ($img == "" && (($name == "image") || (preg_match("/image$/", $property, $matches) != 0))) {
                 $img = $meta->getAttribute('content');
+                self::Log("found img by metatag : {$img}");
             }
             
             // Récupérer le site "og:site_name"
@@ -151,6 +177,7 @@ class JOWebPreviewHelper
                         $parsedUrl = parse_url($url);
                         $urlRoot = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
                         $img = $urlRoot . '/' . ltrim($src, '/');
+                        self::Log("found img by img tag {$img}");
                         break;
                     }
                 }
@@ -175,33 +202,6 @@ class JOWebPreviewHelper
         libxml_clear_errors();
         return $dom;
     }
-
-
-    /**
-     * Récupère le contenu d'une balise spécifique dans une page HTML, avec gestion des erreurs et des attributs.
-     *
-     * @param string $url L'URL de la page à analyser.
-     * @return DOMNode Le contenu de l'élément ou un message d'erreur.
-     */
-    public static function loadHTML(string $url): string|\DOMDocument {
-        // Créer un contexte pour gérer les options de stream (si nécessaire)
-        $context = stream_context_create([
-            'http' => [
-                'user_agent' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36",
-                'follow_location' => true,
-            ],
-        ]);
-
-        // Charger le contenu HTML
-        $htmlContent = @file_get_contents($url, false, $context);
-        if ($htmlContent === false) {
-            return "Error: Unable to load URL: $url";
-        }
-        return self::strintroDOM($htmlContent);
-    }
-
-
-
 
 
     /**
