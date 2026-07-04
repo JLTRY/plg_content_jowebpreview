@@ -172,6 +172,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $search = $params['search'] ?? NULL;
         $mode = $params['mode'] ?? "full";
         $defdescription = $params['description'] ?? "";
+        $defsite_name = $params['site_name'] ?? "";
         $defimage = $params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
         $max = $params['max'] ?? 500;
         if(!strcmp($type, "joomla")) {
@@ -239,6 +240,9 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         }
                         if ($description == "") {
                             $description = $defdescription;
+                        }
+                        if ($site_name == "") {
+                            $site_name = $defsite_name;
                         }
                         $content = sprintf('<div class="%s"><a class="external" href="%s" style="color: currentcolor;">' .
                                             '<img src="%s" ></img>' .

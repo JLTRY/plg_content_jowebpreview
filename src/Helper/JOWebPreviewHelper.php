@@ -170,7 +170,7 @@ class JOWebPreviewHelper
             $images = $dom->getElementsByTagName('img');
             foreach ($images as $image) {
                 $src = $image->getAttribute('src');
-                if (filter_var($src, FILTER_VALIDATE_URL)) {
+                //if (filter_var($src, FILTER_VALIDATE_URL)) {
                     $img = $src;
                     if (strpos($img, "http") === false) {
                         // Résoudre les chemins relatifs
@@ -180,7 +180,7 @@ class JOWebPreviewHelper
                         self::Log("found img by img tag {$img}");
                         break;
                     }
-                }
+                //}
             }
         }
 
