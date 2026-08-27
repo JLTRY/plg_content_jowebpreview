@@ -61,8 +61,9 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $response = $this->httpclient->get($url);
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
             return sprintf(
-                    'Error code %s received requesting data',
-                    $response->getStatusCode()
+                    'Error code %s received requesting data from url :%s ',
+                    $response->getStatusCode(),
+                    $url
                 );
         }
         return JOWebPreviewHelper::stringTODOM($response->getBody());
@@ -166,7 +167,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $url = $params['url'] ?? 'http://fr.wikipedia.org/wiki';
         $divclass  =  $params['divclass'] ?? "col-md-6 well border border-primary p-3";
         $class  =  $params['class'] ?? '';
-        $tag = trim($params['tag']?? 'p');
+        $tag = trim($params['tag']?? 'html');
         $child = (bool)$params['child']?? false;
         $no = (int)$params['no']?? 0;
         $search = $params['search'] ?? NULL;
@@ -174,7 +175,9 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $defdescription = $params['description'] ?? "";
         $defsite_name = $params['site_name'] ?? "";
         $defimage = $params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
-        $max = $params['max'] ?? 500;
+        $truncate_max = $params['max'] ?? 500;
+        $iframe_width = $params['width'] ?? "100%";
+        $iframe_height = $params['height'] ?? 2148;
         if(!strcmp($type, "joomla")) {
             $uri = Uri::getInstance();
             $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
@@ -194,19 +197,22 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $rooturl = $uri->toString(['scheme', 'host', 'port', 'path']);
         $host_name =  $uri->toString(['host']);
         $icon = sprintf("http://www.google.com/s2/favicons?domain=%s", $host_name);
-        if ($mode != "preview") {
+        if (($mode != "preview")&& ($mode != "iframe")){
             $dom = $this->get($url);
              //returns if errors
             if (!is_object($dom)){
                 return $dom . "<br><a class=\"external\" href=\"". $url ."\">" . $url ."</a>";
             }
-            $artcontent = JOWebPreviewHelper::getDomTag(
-                                            $dom,
-                                            $tag,
-                                            $no,
-                                            $search,
-                                            $class,
-                                            $child);
+            $artcontent = $dom;
+            if ($mode != "iframe"){
+                $artcontent = JOWebPreviewHelper::getDomTag(
+                                                $dom,
+                                                $tag,
+                                                $no,
+                                                $search,
+                                                $class,
+                                                $child);
+            }
             //returns if errors
             if (!is_object($artcontent)) return $artcontent;
         }
@@ -218,7 +224,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                         if ($img == "") {
                             $img = $defimage;
                         }
-                        $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $max);
+                        $artcontent = JOWebPreviewHelper::getLimitedHtml($artcontent, $truncate_max);
                         $content = sprintf('<div class="%s"><h2>%s</h2> %s<p>' .
                                            '<a class="external" href="%s"><img src="%s" ></img><br>' .
                                            '<span style="color: var(--link-color)">' .
@@ -254,13 +260,28 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                                              $divclass, $url, $image , $title, $description, $icon, $site_name);
                         break;
                     case "full":
+                    case "fullreadmore":
                         $html = $dom->saveHTML($artcontent);
                         // Résoudre les chemins relatifs pour les attributs src et href
                         if ($rooturl !== '') {
-                            $html = str_replace('src="/', 'src="' . rtrim($rooturl, '/') . '/', $html);
-                            $html = str_replace('href="/', 'href="' . rtrim($rooturl, '/') . '/', $html);
+                            $html = str_replace('src="', 'src="' . rtrim($rooturl, '/') . '/', $html);
+                            $html = str_replace('href="', 'href="' . rtrim($rooturl, '/') . '/', $html);
                         }
-                        $content = $html;
+                        if ($mode != "fullreadmore") {
+                            $content = $html;
+                        } else {
+                            $content = sprintf('<div class="%s">%s</div>', $divclass, $html) .
+                                       sprintf('<p class="readmore">
+                                                  <a class="btn btn-secondary" href="%s">
+                                                      <span class="icon-chevron-right" aria-hidden="true"></span>' . " " .
+                                                      Text::_('COM_CONTENT_READ_MORE') . 
+                                                  '</a>
+                                                </p>', $url);
+                        }
+                        break;
+                    case "iframe":
+                    default:
+                        $content = '<iframe src="'.$url.'" frameborder="0" scrolling="auto" width="'. $iframe_width .'" height="'. $iframe_height . '"></iframe>';
                         break;
                     
                 }
