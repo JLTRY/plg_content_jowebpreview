@@ -58,15 +58,21 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
      * @return DOMNode Le contenu de l'élément ou un message d'erreur.
      */
     public function get(string $url): string | \DOMDocument{
-        $response = $this->httpclient->get($url);
-        if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
-            return sprintf(
-                    'Error code %s received requesting data from url :%s ',
-                    $response->getStatusCode(),
-                    $url
-                );
+        try {
+            $response = $this->httpclient->get($url);
+            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
+                return sprintf(
+                        'Error code %s received requesting data from url :%s ',
+                        $response->getStatusCode(),
+                        $url
+                    );
+            }
+            return JOWebPreviewHelper::stringTODOM($response->getBody());
         }
-        return JOWebPreviewHelper::stringTODOM($response->getBody());
+        catch ( \RuntimeException $e)
+        {
+            return $e->getMessage();
+        }
     }
 
 
