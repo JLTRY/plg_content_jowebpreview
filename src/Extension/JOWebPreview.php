@@ -170,7 +170,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
             return  "errorf:" . print_r($params, true);
         }
         $subject = $params['name'] ?? $params['subject']?? '';
-        $url = $params['url'] ?? 'http://fr.wikipedia.org/wiki';
+        $url = $params['url'] ?? 'https://fr.wikipedia.org/wiki';
         $divclass  =  $params['divclass'] ?? "col-md-6 well border border-primary p-3";
         $class  =  $params['class'] ?? '';
         $tag = trim($params['tag']?? 'html');
@@ -178,6 +178,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
         $no = (int)$params['no']?? 0;
         $search = $params['search'] ?? NULL;
         $mode = $params['mode'] ?? "full";
+        $type = $params['type'] ?? "webpreview";
         $defdescription = $params['description'] ?? "";
         $defsite_name = $params['site_name'] ?? "";
         $defimage = $params['img'] ?? "/media/plg_content_jowebpreview/images/web_link.png";
@@ -188,7 +189,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
             $uri = Uri::getInstance();
             $url = $url ."index.php?option=com_content&view=article&tmpl=component&id=" . $subject;
         } elseif ( !strcmp($type, "wikipedia")) {
-            $url = 'http://fr.wikipedia.org/wiki';
+            $url = 'https://fr.wikipedia.org/wiki';
             $uri = new Uri($url);
             if ($subject != '') {
                 $url = $url . '/' . urlencode($subject);
@@ -297,6 +298,7 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                 break;
             case 'wikipedia':
                 $artcontent = str_replace("href=\"/wiki","href=\"". $url , $dom->saveHTML($artcontent));
+                $artcontent = $dom->saveHTML($artcontent);
                 $content = sprintf('<div class="%s">%s<p><a href="%s">' .
                             '<img src="/images/wikipedia.png" width="40"></img>' .
                             " " . Text::_('COM_CONTENT_READ_MORE') . 
