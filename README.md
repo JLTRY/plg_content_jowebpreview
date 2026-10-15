@@ -8,6 +8,18 @@ Download <a href="https://github.com/JLTRY/plg_content_jowebpreview/releases/lat
 Joomla 6.0+
 Joomla 5.0+
 
+## Features
+See https://joomla.jltryoen.fr/extensions-joomla/plugins/autre/394-jos-web-preview
+
+## 2026-10-15
+V1.0.7
+add type=webpreview|joomla|wikipedia
+
+
+## 2026-10-07
+V1.0.6
+add try catch to retrive URL
+
 ## 2026-08-25
 V1.0.5
 add fullreadmore and iframe modes

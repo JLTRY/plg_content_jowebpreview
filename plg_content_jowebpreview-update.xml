@@ -7,10 +7,10 @@
 		<type>plugin</type>
 		<folder>content</folder>
 		<client>site</client>
-		<version>1.0.6</version>
+		<version>1.0.7</version>
 		<infourl title="JO's Web Preview">http://www.jltryoen.fr</infourl>
 		<downloads>
-			<downloadurl type="full" format="zip">https://github.com/JLTRY/plg_content_jowebpreview/releases/download/v1.0.6/plg_content_jowebpreview-1.0.6.zip</downloadurl>
+			<downloadurl type="full" format="zip">https://github.com/JLTRY/plg_content_jowebpreview/releases/download/v1.0.7/plg_content_jowebpreview-1.0.7.zip</downloadurl>
 		</downloads>
 		<tags>
 			<tag>Stable</tag>
@@ -19,9 +19,9 @@
 		<maintainerurl>http://www.jltryoen.fr</maintainerurl>
 		<php_minimum>8.0</php_minimum>
 		<targetplatform name="joomla" version="(4\.[01234]|5\.[01234]|6\.[0])"/>
-		<sha256>A000AA685156F8CAE702A04DF9B159D50A84C0F5BDEEEA024EF39D6463E69877</sha256>
-		<sha384>7460DF9AC1492A4A2FA9A448F34AF6521F69FD7B61A8B392FF08C8E914F11EA4723C418CDED56EB44D6ADAE48ECC52F0</sha384>
-		<sha512>FE260DFCDC2D30213ECFAB91F3EA9D3FAE932DA380C075F032D2C9166DC29110BD1BB67F6C840C7AA303C5B8F80830D43EF736FB6CDA0A7F796D6D8D2938A00A</sha512>
+		<sha256>E3C00C2850BAA488A0FEE9188F5059AF01C54F6A032D0C349E43E7BDEE1D9370</sha256>
+		<sha384>A586D51474E04CA4F6B42A137C1EBCA3DAA035DC39A6BE719FE40E6825D563639D1AD85E04F640F426016A69C077171F</sha384>
+		<sha512>C158AE22C57BB56D2FA72C86BAB65580C3FE821820E9FF56F72AF9B05710DEC24AB6AE5E39371AD590E499B5956AB359AC0C6C5308C78D09C4AB647730C98114</sha512>
 	</update>
 </updates>
 
