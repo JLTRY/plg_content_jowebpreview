@@ -298,7 +298,6 @@ class JOWebPreview extends CMSPlugin implements SubscriberInterface
                 break;
             case 'wikipedia':
                 $artcontent = str_replace("href=\"/wiki","href=\"". $url , $dom->saveHTML($artcontent));
-                $artcontent = $dom->saveHTML($artcontent);
                 $content = sprintf('<div class="%s">%s<p><a href="%s">' .
                             '<img src="/images/wikipedia.png" width="40"></img>' .
                             " " . Text::_('COM_CONTENT_READ_MORE') . 
